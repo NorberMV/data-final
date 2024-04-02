@@ -101,6 +101,10 @@ make run
 
 
 - If everything went smoothly, you should receive a notification to the `EMAIL_TO` environemnt variable.
+
+![dag_graph](https://github.com/NorberMV/data-final/blob/master/resources/notification.png)
+
+
 ```
 make stop
 ```
