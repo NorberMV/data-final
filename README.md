@@ -32,19 +32,19 @@ EMAIL_TO=
 # the airflow.utils.email.send_email_smtp function, you have to configure an
 # smtp server here
 
-smtp_host = smtp.gmail.com
+smtp_host = 
 
 smtp_starttls = True
 
 smtp_ssl = False
 
-smtp_user = norbermv.dev@gmail.com
+smtp_user 
 
-smtp_password = dwfhhzeboowptxql
+smtp_password 
 
 smtp_port = 25
 
-smtp_mail_from = norbermv.dev@gmail.com
+smtp_mail_from 
 
 smtp_timeout = 30
 
