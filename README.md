@@ -1,11 +1,12 @@
 # Entregable-Final
 
-This creates a lightweight and functional script that can be used on any operating system by any user. 
-It runs a Directed Acyclic Graph (DAG) that retrieves Bitcoin data from the CoinGecko API, processes 
-the data into a pandas DataFrame, and then inserts it into a Redshift database.
-It also dockerizes a script to make it functional on any operating system.
+This project aims to create a lightweight and functional ETL system. It leverages Airflow's 
+DAG that is scheduled to run daily at 3:00 AM UTC ("0 3 * * *") in order to automate the retrieval of Bitcoin data from the CoinGecko API, processing it into a Pandas DataFrame, 
+and subsequently inserting it into a Redshift database. Additionally, the system compares the retrieved Bitcoin prices 
+against predefined thresholds, categorizing them as 'Low', 'Medium', or 'High', and notifies designated recipients via 
+email accordingly. This is also being Dockerized.
 
-- [How can I install `entregable-4`?](#how-can-i-install-entregable-4)
+- [How can I install `entregable-final`?](#how-can-i-install-entregable-final)
 - [How can I run this ?](#how-can-i-run-this?)
 
 # How can I configure `entregable-final`?
