@@ -2,12 +2,15 @@ import sys
 import os
 import logging
 from pathlib import Path
+
+import pandas as pd
 from sqlalchemy import create_engine
 from sqlalchemy.engine.url import URL
 from sqlalchemy.exc import (
     SQLAlchemyError,
     ResourceClosedError
 )
+
 # Add the the dag_callables package to the sys.path.
 # I'm normalizing the path to avoid getting import errors.
 sys.path.insert(
@@ -39,6 +42,7 @@ SQL_ROOT = Path(ROOT) / 'sql'
 TABLE_EXISTS_SQL_PATH = SQL_ROOT / 'table_exists.sql'
 CREATE_DB_SQL_PATH = SQL_ROOT / 'create_db.sql'
 INSERT_DB_SQL_PATH = SQL_ROOT / 'populate_db.sql'
+CSV_FILE_PATH = Path(ROOT) / 'bitcoin_data.csv'
 
 # Redshift DB configuration envvars
 user = os.getenv('USERNAME')
@@ -49,6 +53,7 @@ dbname = os.getenv('DB_NAME')
 SCHEMA = "norbermv_dev_coderhouse"
 FULL_SCHEMA = f"{SCHEMA}.bitcoin_data"
 REDSHIFT_CONN_ID = "redshift_coder"
+EMAIL_TO = os.getenv('EMAIL_TO')
 
 # Event logging system Config.
 logging.basicConfig(
@@ -57,7 +62,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger(name='Bitcoin Data ETL')
 
-
+BTC_THRESHOLDS = {
+    'Low': 65000,
+    'Medium': 70000,
+    'High': 75000
+}
 
 def build_conn_string(
         user: str,
@@ -156,3 +165,59 @@ def _retrieve_api_data():
     2024-01-19  41261.394798  8.088458e+11   2.516043e+10
     """
     return df
+
+
+def create_update_csv(df):
+    """
+    Create or update a CSV file with the given dataframe.
+
+    Parameters:
+        df (pandas.DataFrame): The dataframe to be saved to the CSV file.
+    """
+    file_path = CSV_FILE_PATH
+    try:
+        # If the file exists, append new data to it
+        existing_data = pd.read_csv(file_path)
+        updated_data = pd.concat([existing_data, df], ignore_index=True)
+        updated_data.to_csv(file_path, index=False)
+        print("CSV file updated successfully.")
+    except FileNotFoundError:
+        # If the file doesn't exist, create a new one
+        df.to_csv(file_path, index=False)
+        print("CSV file created successfully.")
+
+
+
+def _get_average_bitcoin_price_category():
+    """
+    Retrieve bitcoin price category based on the average bitcoin price from the provided CSV file and thresholds.
+
+    Parameters:
+        csv_file (str): Path to the CSV file containing bitcoin prices.
+        thresholds (dict): Dictionary containing thresholds for 'Low', 'Medium', and 'High' prices.
+
+    Returns:
+        str: A string indicating the bitcoin price category ('Low', 'Medium', or 'High').
+    """
+    thresholds = BTC_THRESHOLDS
+    csv_file = CSV_FILE_PATH
+    # Read CSV file
+    df = pd.read_csv(csv_file)
+
+    # Calculate average bitcoin price
+    average_price = df['prices'].mean()
+
+    if average_price < thresholds['Low']:
+        price_category = 'Low'
+    elif thresholds['Low'] <= average_price < thresholds['Medium']:
+        price_category = 'Medium'
+    elif average_price >= thresholds['Medium']:
+        price_category = 'High'
+
+    body = f"""
+        <h2>Bitcoin Price Alert!</h2>
+        <p>Average Bitcoin price is: {average_price}, which is considered <strong>{price_category}</strong>.</p>
+        <p>The current thresholds values are: Low: {thresholds['Low']}, Medium: {thresholds['Medium']}, High: {thresholds['High']}</p>
+    """
+    return body
+

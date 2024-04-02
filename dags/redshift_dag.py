@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.providers.amazon.aws.operators.redshift_sql import RedshiftSQLOperator
 from airflow.operators.python_operator import PythonOperator
+from airflow.operators.email_operator import EmailOperator
 
 # Add the the dag_callables package to the sys.path.
 # I'm also normalizing the path to avoid getting import errors.
@@ -17,11 +18,12 @@ sys.path.insert(
         )
     ),
 )
-from callables import insert_to_redshift
+from callables import insert_to_redshift, get_average_bitcoin_price_category
 from utils import (
     TABLE_EXISTS_SQL_PATH,
     CREATE_DB_SQL_PATH,
     FULL_SCHEMA,
+    EMAIL_TO,
 )
 
 
@@ -58,6 +60,18 @@ with DAG(
         task_id='insert_data_to_redshift',
         python_callable=insert_to_redshift,
     )
+    task_4 = PythonOperator(
+        task_id='retrieve_btc_price',
+        python_callable=get_average_bitcoin_price_category,
+    )
+    task_5 = EmailOperator(
+        task_id='send_BTC_mail_alert',
+        to=EMAIL_TO,
+        subject='Airflow Bitcoin Price Alert!',
+        html_content="{{ task_instance.xcom_pull(task_ids='retrieve_btc_price') }}",
+    )
     # upsert
     task_1 >> task_2
     task_2 >> task_3
+    task_3 >> task_4
+    task_4 >> task_5

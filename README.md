@@ -15,12 +15,43 @@ Just make sure you have the following installed and set up on your machine:
 - Create a ./logs folder at the root of the repository.
 - This assumes you have an `.env` file at the root of the repository containing the following Redshift DB data:
 ```
+# Redshift connection config
 DB_NAME=
 HOST=
 PORT=
 USERNAME=
 PASSW=
+
+# email alert config
+EMAIL_TO=
 ```
+- You need to configure the following [smtp] settings on the airflow.cfg file with your smtp creds.
+```  
+[smtp]
+# If you want airflow to send emails on retries, failure, and you want to use
+# the airflow.utils.email.send_email_smtp function, you have to configure an
+# smtp server here
+
+smtp_host = 
+
+smtp_starttls = True
+
+smtp_ssl = False
+
+smtp_user 
+
+smtp_password 
+
+smtp_port = 25
+
+smtp_mail_from 
+
+smtp_timeout = 30
+
+smtp_retry_limit = 5
+
+```
+
 
 # How can I run this?
 - Launch Docker desktop to have the docker daemon running.
