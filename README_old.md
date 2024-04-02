@@ -1,14 +1,14 @@
-# Entregable-3
+# Entregable-4
 
 This creates a lightweight and functional script that can be used on any operating system by any user. 
 It runs a Directed Acyclic Graph (DAG) that retrieves Bitcoin data from the CoinGecko API, processes 
 the data into a pandas DataFrame, and then inserts it into a Redshift database.
 It also dockerizes a script to make it functional on any operating system.
 
-- [How can I install `entregable-3`?](#how-can-i-install-entregable-3)
+- [How can I install `entregable-4`?](#how-can-i-install-entregable-4)
 - [How can I run this ?](#how-can-i-run-this?)
 
-# How can I install `entregable-3`?
+# How can I install `entregable-4`?
 Just make sure you have the following installed and set up on your machine:
 
 - You need to have Docker Desktop and Docker Compose installed.
