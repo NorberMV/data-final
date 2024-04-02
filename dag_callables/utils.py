@@ -10,8 +10,6 @@ from sqlalchemy.exc import (
     SQLAlchemyError,
     ResourceClosedError
 )
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
 
 # Add the the dag_callables package to the sys.path.
 # I'm normalizing the path to avoid getting import errors.
@@ -55,6 +53,7 @@ dbname = os.getenv('DB_NAME')
 SCHEMA = "norbermv_dev_coderhouse"
 FULL_SCHEMA = f"{SCHEMA}.bitcoin_data"
 REDSHIFT_CONN_ID = "redshift_coder"
+EMAIL_TO = os.getenv('EMAIL_TO')
 
 # Event logging system Config.
 logging.basicConfig(
@@ -188,36 +187,6 @@ def create_update_csv(df):
         print("CSV file created successfully.")
 
 
-import pandas as pd
-
-def get_bitcoin_price_category(csv_file):
-    """
-    Retrieve bitcoin price category based on the provided thresholds.
-
-    Parameters:
-        csv_file (str): Path to the CSV file containing bitcoin prices.
-        thresholds (dict): Dictionary containing thresholds for 'Low', 'Medium', and 'High' prices.
-
-    Returns:
-        str: A string indicating the bitcoin price category ('Low', 'Medium', or 'High').
-    """
-    thresholds = BTC_THRESHOLDS
-    csv_file = CSV_FILE_PATH
-    # Read CSV file
-    df = pd.read_csv(csv_file)
-
-    # Extract 'prices' column
-    prices = df['prices']
-
-    # Iterate over prices and compare with thresholds
-    for price in prices:
-        if price < thresholds['Low']:
-            return 'Low'
-        elif thresholds['Low'] <= price < thresholds['Medium']:
-            return 'Medium'
-        elif price >= thresholds['Medium']:
-            return 'High'
-
 
 def _get_average_bitcoin_price_category():
     """
@@ -245,30 +214,10 @@ def _get_average_bitcoin_price_category():
     elif average_price >= thresholds['Medium']:
         price_category = 'High'
 
-    # Send email notification
-    subject = "Bitcoin Price Alert!"
     body = f"""
-        Average Bitcoin price is considered {price_category}.
-        Thresholds values are: Low: {thresholds['Low']}, Medium: {thresholds['Medium']}, High: {thresholds['High']}
+        <h2>Bitcoin Price Alert!</h2>
+        <p>Average Bitcoin price is: {average_price}, which is considered <strong>{price_category}</strong>.</p>
+        <p>The current thresholds values are: Low: {thresholds['Low']}, Medium: {thresholds['Medium']}, High: {thresholds['High']}</p>
     """
-    _send_email(subject, body)
+    return body
 
-    return price_category
-
-def _send_email(subject, body):
-    """
-    Send an email using SendGrid API.
-
-    Parameters:
-        subject (str): Email subject.
-        body (str): Email body content.
-    """
-    message = Mail(
-        from_email=os.environ['EMAIL_FROM'],
-        to_emails=os.environ['EMAIL_TO'],
-        subject=subject,
-        html_content=body)
-
-    sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
-    response = sg.send(message)
-    print(response.status_code)

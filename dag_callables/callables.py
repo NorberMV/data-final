@@ -31,8 +31,8 @@ def insert_to_redshift():
 
 
 def get_average_bitcoin_price_category():
-    """..."""
-    ut._get_average_bitcoin_price_category()
+    """This retrieves the average current BTC price"""
+    return ut._get_average_bitcoin_price_category()
 
 
 
