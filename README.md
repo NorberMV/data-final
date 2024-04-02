@@ -47,6 +47,9 @@ your `airflow.cfg` file. You will end up with a folder structure similar to the 
 │   └── .env
 ├── dags
 │   └── redshift_dag.py
+├── resources
+│   ├── dag_graph.png
+│   └── notification.png
 ├── docker-compose.yaml
 ├── logs
 ├── plugins
