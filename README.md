@@ -108,7 +108,7 @@ make run
 
 ![dag_graph](https://github.com/NorberMV/data-final/blob/master/resources/notification.png)
 
-
+To conclude, if you have completed your tasks, simply execute the following command:
 ```
 make stop
 ```
