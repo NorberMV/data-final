@@ -2,12 +2,17 @@ import sys
 import os
 import logging
 from pathlib import Path
+
+import pandas as pd
 from sqlalchemy import create_engine
 from sqlalchemy.engine.url import URL
 from sqlalchemy.exc import (
     SQLAlchemyError,
     ResourceClosedError
 )
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+
 # Add the the dag_callables package to the sys.path.
 # I'm normalizing the path to avoid getting import errors.
 sys.path.insert(
@@ -39,6 +44,7 @@ SQL_ROOT = Path(ROOT) / 'sql'
 TABLE_EXISTS_SQL_PATH = SQL_ROOT / 'table_exists.sql'
 CREATE_DB_SQL_PATH = SQL_ROOT / 'create_db.sql'
 INSERT_DB_SQL_PATH = SQL_ROOT / 'populate_db.sql'
+CSV_FILE_PATH = Path(ROOT) / 'bitcoin_data.csv'
 
 # Redshift DB configuration envvars
 user = os.getenv('USERNAME')
@@ -57,7 +63,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger(name='Bitcoin Data ETL')
 
-
+BTC_THRESHOLDS = {
+    'Low': 65000,
+    'Medium': 70000,
+    'High': 75000
+}
 
 def build_conn_string(
         user: str,
@@ -156,3 +166,109 @@ def _retrieve_api_data():
     2024-01-19  41261.394798  8.088458e+11   2.516043e+10
     """
     return df
+
+
+def create_update_csv(df):
+    """
+    Create or update a CSV file with the given dataframe.
+
+    Parameters:
+        df (pandas.DataFrame): The dataframe to be saved to the CSV file.
+    """
+    file_path = CSV_FILE_PATH
+    try:
+        # If the file exists, append new data to it
+        existing_data = pd.read_csv(file_path)
+        updated_data = pd.concat([existing_data, df], ignore_index=True)
+        updated_data.to_csv(file_path, index=False)
+        print("CSV file updated successfully.")
+    except FileNotFoundError:
+        # If the file doesn't exist, create a new one
+        df.to_csv(file_path, index=False)
+        print("CSV file created successfully.")
+
+
+import pandas as pd
+
+def get_bitcoin_price_category(csv_file):
+    """
+    Retrieve bitcoin price category based on the provided thresholds.
+
+    Parameters:
+        csv_file (str): Path to the CSV file containing bitcoin prices.
+        thresholds (dict): Dictionary containing thresholds for 'Low', 'Medium', and 'High' prices.
+
+    Returns:
+        str: A string indicating the bitcoin price category ('Low', 'Medium', or 'High').
+    """
+    thresholds = BTC_THRESHOLDS
+    csv_file = CSV_FILE_PATH
+    # Read CSV file
+    df = pd.read_csv(csv_file)
+
+    # Extract 'prices' column
+    prices = df['prices']
+
+    # Iterate over prices and compare with thresholds
+    for price in prices:
+        if price < thresholds['Low']:
+            return 'Low'
+        elif thresholds['Low'] <= price < thresholds['Medium']:
+            return 'Medium'
+        elif price >= thresholds['Medium']:
+            return 'High'
+
+
+def _get_average_bitcoin_price_category():
+    """
+    Retrieve bitcoin price category based on the average bitcoin price from the provided CSV file and thresholds.
+
+    Parameters:
+        csv_file (str): Path to the CSV file containing bitcoin prices.
+        thresholds (dict): Dictionary containing thresholds for 'Low', 'Medium', and 'High' prices.
+
+    Returns:
+        str: A string indicating the bitcoin price category ('Low', 'Medium', or 'High').
+    """
+    thresholds = BTC_THRESHOLDS
+    csv_file = CSV_FILE_PATH
+    # Read CSV file
+    df = pd.read_csv(csv_file)
+
+    # Calculate average bitcoin price
+    average_price = df['prices'].mean()
+
+    if average_price < thresholds['Low']:
+        price_category = 'Low'
+    elif thresholds['Low'] <= average_price < thresholds['Medium']:
+        price_category = 'Medium'
+    elif average_price >= thresholds['Medium']:
+        price_category = 'High'
+
+    # Send email notification
+    subject = "Bitcoin Price Alert!"
+    body = f"""
+        Average Bitcoin price is considered {price_category}.
+        Thresholds values are: Low: {thresholds['Low']}, Medium: {thresholds['Medium']}, High: {thresholds['High']}
+    """
+    _send_email(subject, body)
+
+    return price_category
+
+def _send_email(subject, body):
+    """
+    Send an email using SendGrid API.
+
+    Parameters:
+        subject (str): Email subject.
+        body (str): Email body content.
+    """
+    message = Mail(
+        from_email=os.environ['EMAIL_FROM'],
+        to_emails=os.environ['EMAIL_TO'],
+        subject=subject,
+        html_content=body)
+
+    sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
+    response = sg.send(message)
+    print(response.status_code)

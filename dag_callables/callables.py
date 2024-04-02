@@ -22,9 +22,18 @@ def insert_to_redshift():
     """
     # 1. Retrieve api data
     df = ut._retrieve_api_data()
-    # 2. Load and format the SQL from the sql file
+    # 2. Create or update CSV file with the dataframe
+    ut.create_update_csv(df)
+    # 3. Load and format the SQL from the sql file
     str_query = ut.load_and_format_sql(ut.FULL_SCHEMA)
-    # 3. Populate the Redshift DB table
+    # 4. Populate the Redshift DB table
     ut._populate_db(df, str_query=str_query)
+
+
+def get_average_bitcoin_price_category():
+    """..."""
+    ut._get_average_bitcoin_price_category()
+
+
 
 

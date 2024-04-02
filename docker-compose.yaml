@@ -62,6 +62,7 @@ x-airflow-common:
     - ./plugins:/opt/airflow/plugins
     - ./dag_callables:/opt/airflow/dag_callables
     - ./sql:/opt/airflow/sql
+    - ./config:/opt/airflow
   user: "${AIRFLOW_UID:-50000}:${AIRFLOW_GID:-50000}"
   depends_on:
     postgres:
